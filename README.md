@@ -30,7 +30,7 @@ Or simply copy the `magnet` file to a location in your `$PATH` and make it execu
 
 ## How it works
 
-this script scrapes [1337x.to](https://1337x.to) and gets the magnet link after opens qbittorrent to download
+this script scrapes [1337x.to](https://1337x.to) and gets the magnet link and then opens qbittorrent to download
 
 ## Self-Promotion
 
