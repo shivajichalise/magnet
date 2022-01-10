@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 #        _       _                _      
 #       | |     | |              (_)     
@@ -11,25 +11,25 @@
 #
 # Get a torrent's magnet link from cli and download using qbittorrent.
 
-mkdir -p $HOME/.cache/magnet
+mkdir -p "$HOME"/.cache/magnet
 
 baseUrl="https://1337x.to"
 cacheDir="$HOME/.cache/magnet"
 
-if [ -z $1 ]; then
+if [ -z "$1" ]; then
   echo -n "Search Torrent: "
-  read searchInput
+  read -r searchInput
 else
   searchInput=$1
 fi
 
-searchInput="$(echo $searchInput | sed 's/ /%20/g')"
+searchInput="$(string="$searchInput" ; echo "${string// /%20/g}")"
 
-curl -s $baseUrl/sort-search/$searchInput/seeders/desc/1/ > $cacheDir/temp.html
+curl -s "$baseUrl"/sort-search/"$searchInput"/seeders/desc/1/ > "$cacheDir"/temp.html
 # Get Titles
-grep -o '<a href="/torrent/.*</a>' $cacheDir/temp.html | sed 's/<[^>]*>//g' | sed 's/^/  /' > $cacheDir/titles
+grep -o '<a href="/torrent/.*</a>' "$cacheDir"/temp.html | sed 's/<[^>]*>//g' | sed 's/^/  /' > "$cacheDir"/titles
 
-count=$(wc -l $cacheDir/titles | awk '{print $1}')
+count=$(wc -l "$cacheDir"/titles | awk '{print $1}')
 if [ "$count" -lt 1 ]; then
   echo "No results found"
   printf "\033c"
@@ -37,28 +37,28 @@ if [ "$count" -lt 1 ]; then
 fi
 
 # Seeders and Leechers
-grep -o '<td class="coll-2 seeds.*</td>\|<td class="coll-3 leeches.*</td>' $cacheDir/temp.html | sed 's/<[^>]*>//g' | sed 'N;s/\n/ L:/' | sed 's/^/S:/' > $cacheDir/seedsleech
+grep -o '<td class="coll-2 seeds.*</td>\|<td class="coll-3 leeches.*</td>' "$cacheDir"/temp.html | sed 's/<[^>]*>//g' | sed 'N;s/\n/ L:/' | sed 's/^/S:/' > "$cacheDir"/seedsleech
 
 # Size
-grep -o '<td class="coll-4 size.*</td>' $cacheDir/temp.html | sed 's/<span class="seeds">.*<\/span>//g' | sed -e 's/<[^>]*>//g' > $cacheDir/size
+grep -o '<td class="coll-4 size.*</td>' "$cacheDir"/temp.html | sed 's/<span class="seeds">.*<\/span>//g' | sed -e 's/<[^>]*>//g' > "$cacheDir"/size
 
-paste -d\  $cacheDir/seedsleech $cacheDir/size $cacheDir/titles > $cacheDir/final
+paste -d\  "$cacheDir"/seedsleech "$cacheDir"/size "$cacheDir"/titles > "$cacheDir"/final
 
 # Links
-grep -E '/torrent/' $cacheDir/temp.html | sed -E 's#.*(/torrent/.*)/">.*/#\1#' | sed 's/td>//g' > $cacheDir/links
+grep -E '/torrent/' "$cacheDir"/temp.html | sed -E 's#.*(/torrent/.*)/">.*/#\1#' | sed 's/td>//g' > "$cacheDir"/links
 
 linksFile="$cacheDir/final"
 declare -a array
 i=1
 j=1
-while read line
+while read -r line
 do		
 	array[ $i ]=$j
 	(( j++ ))
 	array[ ($i + 1) ]=$line
-        (( i=($i+2) ))
+        (( i=i+2 ))
 	
-done < $linksFile
+done < "$linksFile"
 
 TERMINAL=$(tty)
 HEIGHT=20
@@ -74,19 +74,19 @@ CHOICE=$(dialog --clear \
                 --menu "$MENU" \
                 $HEIGHT $WIDTH $CHOICE_HEIGHT \
                 "${array[@]}" \
-                2>&1 >$TERMINAL)
+                2>&1 >"$TERMINAL")
 
 if [ -z "$CHOICE" ]; then
   echo "None Selected"
   printf "\033c"
   exit 0
 else
-  linkUrl=$(head -n $CHOICE $cacheDir/links | tail -n +$CHOICE)
+  linkUrl=$(head -n "$CHOICE" "$cacheDir"/links | tail -n +"$CHOICE")
   fullUrl="${baseUrl}${linkUrl}/"
 
   # get magnet link
-  curl -s $fullUrl > $cacheDir/magnetLink
-  magnet=$(grep -Po "magnet:\?xt=urn:btih:[a-zA-Z0-9]*" $cacheDir/magnetLink | head -n 1)
+  curl -s "$fullUrl" > "$cacheDir"/magnetLink
+  magnet=$(grep -Po "magnet:\?xt=urn:btih:[a-zA-Z0-9]*" "$cacheDir"/magnetLink | head -n 1)
   qbittorrent "$magnet" &
 fi
 
